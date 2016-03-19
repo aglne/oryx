@@ -15,7 +15,6 @@
 
 package com.cloudera.oryx.als.computation.iterate.row;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +50,6 @@ public final class RowStep extends IterationStep {
 
   public static final String Y_KEY_KEY = "Y_KEY";
   public static final String POPULAR_KEY = "POPULAR";
-  public static final String CONVERGENCE_SAMPLING_MODULUS_KEY = "CONVERGENCE_SAMPLING_MODULUS";
   public static final String MAP_KEY = "MAP";
 
   @Override
@@ -116,16 +114,6 @@ public final class RowStep extends IterationStep {
         .write(output(xKey));
 
     if (!x) {
-
-      long trainSize;
-      try (BufferedReader in = store.readFrom(tempKey + "trainSize.txt")) {
-        trainSize = Long.parseLong(in.readLine());
-      }
-      // Target about 1000 samples per reducer
-      int modulus = (int) Math.max(trainSize / (1000L * opts.getNumReducers()), 1);
-      // Configure and perform convergence sampling
-      conf.setInt(CONVERGENCE_SAMPLING_MODULUS_KEY, modulus);
-
       matrix
           .parallelDo("asPair", MatrixRow.AS_PAIR, Avros.tableOf(Avros.longs(), ALSTypes.FLOAT_ARRAY))
           .parallelDo("convergenceSample", new ConvergenceSampleFn(yState), Avros.strings())
